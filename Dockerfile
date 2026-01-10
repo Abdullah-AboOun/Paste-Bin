@@ -5,10 +5,10 @@ FROM oven/bun:1.3.5-alpine AS deps
 WORKDIR /app
 
 # Copy package files
-COPY package.json bun.lockb ./
+COPY package.json bun.lock* ./
 
-# Install dependencies
-RUN bun install --frozen-lockfile --production=false
+# Install dependencies (including devDependencies for building)
+RUN bun install --frozen-lockfile
 
 # Stage 2: Builder - Build the Next.js application
 FROM oven/bun:1.3.5-alpine AS builder
@@ -22,6 +22,7 @@ COPY . .
 # Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV SKIP_ENV_VALIDATION=1
 
 # Build the Next.js application
 RUN bun run build
