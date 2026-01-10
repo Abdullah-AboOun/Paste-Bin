@@ -1,8 +1,8 @@
+import { sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/server/db";
-import { sql } from "drizzle-orm";
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
 	try {
 		// Check database connectivity
 		const result = await db.execute(sql`SELECT 1 as health`);

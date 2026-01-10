@@ -2,9 +2,8 @@ import "@/styles/globals.css";
 
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
-
-import { TRPCReactProvider } from "@/trpc/react";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TRPCReactProvider } from "@/trpc/react";
 
 export const metadata: Metadata = {
 	title: "Reading List Dashboard",
@@ -29,8 +28,8 @@ export default function RootLayout({
 				<ThemeProvider
 					attribute="class"
 					defaultTheme="system"
-					enableSystem
 					disableTransitionOnChange
+					enableSystem
 				>
 					<TRPCReactProvider>{children}</TRPCReactProvider>
 				</ThemeProvider>
