@@ -1,0 +1,130 @@
+name: Docker Build and Test
+
+on:
+  push:
+    branches: [ main, feature/** ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-typecheck:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: 1.3.5
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Run type check
+        run: bun run typecheck
+
+      - name: Run linter
+        run: bun run check
+
+  docker-build:
+    name: Docker Build and Test
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: pastebin:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Start services with Docker Compose
+        run: |
+          docker compose up -d
+          sleep 10
+
+      - name: Check services are running
+        run: |
+          docker compose ps
+          docker compose logs app
+
+      - name: Wait for application to be ready
+        run: |
+          max_attempts=30
+          attempt=0
+          until curl -f http://localhost:3000/api/health || [ $attempt -eq $max_attempts ]; do
+            echo "Waiting for application to be ready... (attempt $((attempt+1))/$max_attempts)"
+            sleep 2
+            attempt=$((attempt+1))
+          done
+          if [ $attempt -eq $max_attempts ]; then
+            echo "Application failed to start"
+            docker compose logs app
+            exit 1
+          fi
+
+      - name: Run health check
+        run: |
+          response=$(curl -s http://localhost:3000/api/health)
+          echo "Health check response: $response"
+          status=$(echo $response | jq -r '.status')
+          if [ "$status" != "healthy" ]; then
+            echo "Health check failed!"
+            exit 1
+          fi
+          echo "✓ Health check passed!"
+
+      - name: Test database connectivity
+        run: |
+          response=$(curl -s http://localhost:3000/api/health)
+          db_status=$(echo $response | jq -r '.database')
+          if [ "$db_status" != "connected" ]; then
+            echo "Database connectivity test failed!"
+            exit 1
+          fi
+          echo "✓ Database connectivity test passed!"
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          echo "=== Application Logs ==="
+          docker compose logs app
+          echo "=== Database Logs ==="
+          docker compose logs db
+
+      - name: Stop services
+        if: always()
+        run: docker compose down -v
+
+  build-summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, docker-build]
+    if: always()
+    
+    steps:
+      - name: Check build results
+        run: |
+          if [ "${{ needs.lint-and-typecheck.result }}" == "success" ] && [ "${{ needs.docker-build.result }}" == "success" ]; then
+            echo "✓ All checks passed!"
+            echo "✓ Linting and type checking: PASSED"
+            echo "✓ Docker build and tests: PASSED"
+          else
+            echo "✗ Some checks failed"
+            echo "Linting and type checking: ${{ needs.lint-and-typecheck.result }}"
+            echo "Docker build and tests: ${{ needs.docker-build.result }}"
+            exit 1
+          fi

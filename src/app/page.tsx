@@ -1,12 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { api } from "@/trpc/react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { ModeToggle } from "@/components/mode-toggle";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { api } from "@/trpc/react";
 
 export default function Home() {
 	const [title, setTitle] = useState("");
@@ -49,9 +55,13 @@ export default function Home() {
 		<main className="min-h-screen bg-background p-4 md:p-8">
 			<div className="mx-auto max-w-4xl space-y-8">
 				<div className="flex items-center justify-between">
-					<div className="text-center flex-1">
-						<h1 className="text-4xl font-bold tracking-tight">Reading List Dashboard</h1>
-						<p className="mt-2 text-muted-foreground">Save articles to read later</p>
+					<div className="flex-1 text-center">
+						<h1 className="font-bold text-4xl tracking-tight">
+							Reading List Dashboard
+						</h1>
+						<p className="mt-2 text-muted-foreground">
+							Save articles to read later
+						</p>
 					</div>
 					<ModeToggle />
 				</div>
@@ -62,26 +72,30 @@ export default function Home() {
 						<CardDescription>Save a link to read later</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<form onSubmit={handleSubmit} className="space-y-4">
+						<form className="space-y-4" onSubmit={handleSubmit}>
 							<div className="space-y-2">
 								<Input
-									type="text"
-									placeholder="Article title"
-									value={title}
+									disabled={createArticle.isPending}
 									onChange={(e) => setTitle(e.target.value)}
-									disabled={createArticle.isPending}
+									placeholder="Article title"
+									type="text"
+									value={title}
 								/>
 							</div>
 							<div className="space-y-2">
 								<Input
-									type="url"
-									placeholder="https://example.com/article"
-									value={url}
-									onChange={(e) => setUrl(e.target.value)}
 									disabled={createArticle.isPending}
+									onChange={(e) => setUrl(e.target.value)}
+									placeholder="https://example.com/article"
+									type="url"
+									value={url}
 								/>
 							</div>
-							<Button type="submit" disabled={createArticle.isPending} className="w-full">
+							<Button
+								className="w-full"
+								disabled={createArticle.isPending}
+								type="submit"
+							>
 								{createArticle.isPending ? "Adding..." : "Add Article"}
 							</Button>
 						</form>
@@ -89,55 +103,64 @@ export default function Home() {
 				</Card>
 
 				<div className="space-y-4">
-					<h2 className="text-2xl font-semibold">Your Articles</h2>
+					<h2 className="font-semibold text-2xl">Your Articles</h2>
 					{isLoading ? (
 						<p className="text-center text-muted-foreground">Loading...</p>
 					) : articles && articles.length > 0 ? (
 						<div className="space-y-3">
 							{articles.map((article) => (
-								<Card key={article.id} className={article.isRead ? "opacity-60" : ""}>
+								<Card
+									className={article.isRead ? "opacity-60" : ""}
+									key={article.id}
+								>
 									<CardContent className="p-6">
 										<div className="flex items-start gap-6">
-											<div className="flex-1 min-w-0 space-y-2">
+											<div className="min-w-0 flex-1 space-y-2">
 												<a
+													className="block break-words font-semibold text-lg hover:underline"
 													href={article.url}
-													target="_blank"
 													rel="noopener noreferrer"
-													className="text-lg font-semibold hover:underline break-words block"
+													target="_blank"
 												>
 													{article.title}
 												</a>
 												<a
+													className="block break-all text-muted-foreground text-sm hover:underline"
 													href={article.url}
-													target="_blank"
 													rel="noopener noreferrer"
-													className="block text-sm text-muted-foreground hover:underline break-all"
+													target="_blank"
 												>
 													{article.url}
 												</a>
-												<p className="text-xs text-muted-foreground">
-													Added {new Date(article.createdAt).toLocaleDateString()}
+												<p className="text-muted-foreground text-xs">
+													Added{" "}
+													{new Date(article.createdAt).toLocaleDateString()}
 												</p>
 											</div>
-											<div className="flex flex-col items-end gap-3 flex-shrink-0">
+											<div className="flex flex-shrink-0 flex-col items-end gap-3">
 												<div className="flex items-center gap-2">
-													<span className="text-sm text-muted-foreground whitespace-nowrap">
+													<span className="whitespace-nowrap text-muted-foreground text-sm">
 														{article.isRead ? "Read" : "Unread"}
 													</span>
 													<Switch
 														checked={article.isRead}
-														onCheckedChange={() =>
-															toggleRead.mutate({ id: article.id, currentState: article.isRead })
-														}
 														disabled={toggleRead.isPending}
+														onCheckedChange={() =>
+															toggleRead.mutate({
+																id: article.id,
+																currentState: article.isRead,
+															})
+														}
 													/>
 												</div>
 												<Button
-													variant="destructive"
-													size="sm"
-													onClick={() => deleteArticle.mutate({ id: article.id })}
-													disabled={deleteArticle.isPending}
 													className="w-20"
+													disabled={deleteArticle.isPending}
+													onClick={() =>
+														deleteArticle.mutate({ id: article.id })
+													}
+													size="sm"
+													variant="destructive"
 												>
 													Delete
 												</Button>
@@ -150,7 +173,9 @@ export default function Home() {
 					) : (
 						<Card>
 							<CardContent className="p-12 text-center">
-								<p className="text-muted-foreground">No articles saved yet. Add one above!</p>
+								<p className="text-muted-foreground">
+									No articles saved yet. Add one above!
+								</p>
 							</CardContent>
 						</Card>
 					)}
