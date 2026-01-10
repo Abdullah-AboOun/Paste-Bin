@@ -53,13 +53,13 @@ jobs:
 
       - name: Start services with Docker Compose
         run: |
-          docker-compose up -d
+          docker compose up -d
           sleep 10
 
       - name: Check services are running
         run: |
-          docker-compose ps
-          docker-compose logs app
+          docker compose ps
+          docker compose logs app
 
       - name: Wait for application to be ready
         run: |
@@ -72,7 +72,7 @@ jobs:
           done
           if [ $attempt -eq $max_attempts ]; then
             echo "Application failed to start"
-            docker-compose logs app
+            docker compose logs app
             exit 1
           fi
 
@@ -101,13 +101,13 @@ jobs:
         if: failure()
         run: |
           echo "=== Application Logs ==="
-          docker-compose logs app
+          docker compose logs app
           echo "=== Database Logs ==="
-          docker-compose logs db
+          docker compose logs db
 
       - name: Stop services
         if: always()
-        run: docker-compose down -v
+        run: docker compose down -v
 
   build-summary:
     name: Build Summary
