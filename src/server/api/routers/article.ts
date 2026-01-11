@@ -8,13 +8,18 @@ export const articleRouter = createTRPCRouter({
 		.input(
 			z.object({
 				title: z.string().min(1).max(512),
-				url: z.string().url(),
+				url: z.string().min(1),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
+			// Auto-prepend https:// if no protocol is specified
+			const url = input.url.match(/^https?:\/\//)
+				? input.url
+				: `https://${input.url}`;
+
 			return ctx.db.insert(articles).values({
 				title: input.title,
-				url: input.url,
+				url: url,
 				isRead: false,
 			});
 		}),

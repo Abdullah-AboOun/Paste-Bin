@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Button } from "@/components/ui/button";
@@ -86,18 +87,16 @@ export default function Home() {
 								<Input
 									disabled={createArticle.isPending}
 									onChange={(e) => setUrl(e.target.value)}
-									placeholder="https://example.com/article"
-									type="url"
+									placeholder="example.com/article"
+									type="text"
 									value={url}
 								/>
 							</div>
-							<Button
-								className="w-full"
-								disabled={createArticle.isPending}
-								type="submit"
-							>
-								{createArticle.isPending ? "Adding..." : "Add Article"}
-							</Button>
+							<div className="flex justify-center">
+								<Button disabled={createArticle.isPending} type="submit">
+									{createArticle.isPending ? "Adding..." : "Add Article"}
+								</Button>
+							</div>
 						</form>
 					</CardContent>
 				</Card>
@@ -113,9 +112,9 @@ export default function Home() {
 									className={article.isRead ? "opacity-60" : ""}
 									key={article.id}
 								>
-									<CardContent className="p-6">
+									<CardContent className="p-4">
 										<div className="flex items-start gap-6">
-											<div className="min-w-0 flex-1 space-y-2">
+											<div className="min-w-0 flex-1 space-y-1">
 												<a
 													className="block break-words font-semibold text-lg hover:underline"
 													href={article.url}
@@ -144,6 +143,7 @@ export default function Home() {
 													</span>
 													<Switch
 														checked={article.isRead}
+														className="cursor-pointer transition-opacity hover:opacity-80"
 														disabled={toggleRead.isPending}
 														onCheckedChange={() =>
 															toggleRead.mutate({
@@ -153,17 +153,18 @@ export default function Home() {
 														}
 													/>
 												</div>
-												<Button
-													className="w-20"
+												<button
+													className="inline-flex h-9 w-9 items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium text-destructive text-sm transition-colors hover:bg-accent hover:text-destructive focus:outline-none focus-visible:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0"
 													disabled={deleteArticle.isPending}
 													onClick={() =>
 														deleteArticle.mutate({ id: article.id })
 													}
-													size="sm"
-													variant="destructive"
+													title="Move to trash"
+													type="button"
 												>
-													Delete
-												</Button>
+													<Trash2 className="h-4 w-4" />
+													<span className="sr-only">Move to trash</span>
+												</button>
 											</div>
 										</div>
 									</CardContent>
