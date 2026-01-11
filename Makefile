@@ -1,4 +1,4 @@
-.PHONY: help build up down restart logs clean db-shell health status test install dev
+.PHONY: help build up down restart logs clean db-shell health status test install dev update
 
 # Default target
 .DEFAULT_GOAL := help
@@ -100,3 +100,12 @@ rebuild: ## Rebuild and restart services
 	$(MAKE) down
 	$(MAKE) build
 	$(MAKE) up
+update: ## Pull latest changes from git and restart services
+	@echo "$(BLUE)Pulling latest changes...$(NC)"
+	git pull
+	@echo "$(GREEN)✓ Code updated$(NC)"
+	@echo "$(BLUE)Installing dependencies...$(NC)"
+	bun install
+	@echo "$(BLUE)Rebuilding and restarting services...$(NC)"
+	$(MAKE) rebuild
+	@echo "$(GREEN)✓ Update complete!$(NC)"
