@@ -1,0 +1,44 @@
+# Development overrides - automatically loaded by docker-compose
+# This file adds local PostgreSQL database for development
+
+services:
+  # PostgreSQL Database (dev only)
+  db:
+    image: postgres:16-alpine
+    container_name: pastebin-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - pastebin-network
+
+  # Override app service for development
+  app:
+    environment:
+      DATABASE_URL: postgresql://postgres:password@db:5432/app
+      NODE_ENV: development
+    depends_on:
+      db:
+        condition: service_healthy
+    # Remove resource limits for dev
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+volumes:
+  postgres_data:
+    driver: local
