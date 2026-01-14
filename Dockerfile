@@ -46,8 +46,17 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Copy package.json for reference
+# Copy package.json and node_modules for migrations
 COPY --from=builder /app/package.json ./package.json
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy database schema and config for migrations
+COPY --from=builder /app/src/server/db/schema.ts ./src/server/db/schema.ts
+COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+
+# Copy startup script
+COPY --from=builder /app/scripts/start.sh ./scripts/start.sh
+RUN chmod +x ./scripts/start.sh
 
 # Set correct permissions
 RUN chown -R nextjs:nodejs /app
@@ -62,5 +71,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-# Start the application
-CMD ["bun", "run", "server.js"]
+# Start the application with migrations
+CMD ["./scripts/start.sh"]

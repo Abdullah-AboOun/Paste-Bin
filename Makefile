@@ -115,14 +115,14 @@ prod-build: ## Build Docker images for production
 	@echo "$(BLUE)Building production images...$(NC)"
 	docker-compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
 
-prod-up: ## Start production services (no local DB, uses managed PostgreSQL)
+prod-up: ## Start production services with database
 	@echo "$(GREEN)Starting production services...$(NC)"
-	@if [ -z "$$DATABASE_URL" ]; then \
-		echo "$(RED)Error: DATABASE_URL environment variable not set$(NC)"; \
-		echo "$(YELLOW)Set it with: export DATABASE_URL='your-connection-string'$(NC)"; \
+	@if [ ! -f .env.prod ]; then \
+		echo "$(RED)Error: .env.prod file not found$(NC)"; \
+		echo "$(YELLOW)Copy .env.prod.example to .env.prod and update values$(NC)"; \
 		exit 1; \
 	fi
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+	docker-compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
 	@echo "$(GREEN)✓ Production services started!$(NC)"
 	@echo "$(BLUE)Access the app at: http://localhost:3000$(NC)"
 
@@ -141,11 +141,24 @@ prod-restart: ## Restart production services
 
 prod-config: ## Validate production docker-compose configuration
 	@echo "$(BLUE)Validating production configuration...$(NC)"
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml config
+	docker-compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod config
 
-test-prod: ## Test production configuration locally (for validation before deploy)
+prod-migrate: ## Run database migrations in production
+	@echo "$(BLUE)Running production database migrations...$(NC)"
+	docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec app bun run db:push
+
+prod-backup: ## Backup production database
+	@echo "$(BLUE)Creating database backup...$(NC)"
+	@mkdir -p backups
+	docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T db pg_dump -U postgres app > backups/backup_$$(date +%Y%m%d_%H%M%S).sql
+	@echo "$(GREEN)✓ Backup created in backups/$(NC)"
+
+test-prod: ## Test production configuration locally
 	@echo "$(BLUE)Testing production configuration...$(NC)"
-	@echo "$(YELLOW)Note: Ensure DATABASE_URL is set to a test database$(NC)"
+	@if [ ! -f .env.prod ]; then \
+		echo "$(YELLOW)Creating .env.prod from example...$(NC)"; \
+		cp .env.prod.example .env.prod; \
+	fi
 	$(MAKE) prod-config
 	@echo "$(GREEN)✓ Configuration is valid$(NC)"
 
