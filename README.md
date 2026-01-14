@@ -37,6 +37,10 @@ Before running this project, ensure you have installed:
 - [Docker Compose](https://docs.docker.com/compose/install/) (version 2.0 or higher)
 - [Make](https://www.gnu.org/software/make/) (optional, for convenient commands)
 
+For local development without Docker:
+- [Bun](https://bun.sh/) (v1.0 or higher)
+- [PostgreSQL](https://www.postgresql.org/) 16
+
 ## 🚀 Quick Start with Docker
 
 ### Option 1: Using Make (Recommended)
@@ -76,6 +80,27 @@ The application will be available at:
 - **Health Check**: http://localhost:3000/api/health
 - **Database**: localhost:5432
 
+## 🚢 Production Deployment
+
+### Deploy to Any VPS
+
+For production deployment to a VPS (DigitalOcean, AWS, Linode, Vultr, etc.) with Docker, see the comprehensive guide:
+
+📖 **[VPS Deployment Guide](docs/VPS_DEPLOYMENT.md)**
+
+Quick overview:
+```bash
+# On your VPS
+git clone https://github.com/Abdullah-AboOun/Paste-Bin.git
+cd Paste-Bin
+cp .env.prod.example .env.prod
+# Edit .env.prod with secure credentials
+make prod-up
+```
+
+For detailed Docker environment configurations:
+📖 **[Docker Environments Guide](docs/DOCKER_ENVIRONMENTS.md)**
+
 ## 🎯 How to Use
 
 1. **Add an Article**:
@@ -94,12 +119,14 @@ The application will be available at:
 
 ## 🐳 Docker Commands
 
-### Using Make
+### Development Commands
+
+Using Make:
 
 ```bash
 make help          # Show all available commands
 make build         # Build Docker images
-make up            # Start services
+make up            # Start services (app + database)
 make down          # Stop services
 make restart       # Restart services
 make logs          # View logs from all services
@@ -108,8 +135,24 @@ make logs-db       # View database logs only
 make status        # Show service status
 make health        # Check service health
 make db-shell      # Open PostgreSQL shell
+make db-migrate    # Run database migrations
 make clean         # Stop and remove volumes (WARNING: deletes data)
 make rebuild       # Rebuild and restart everything
+```
+
+### Production Commands
+
+Using Make:
+
+```bash
+make prod-build    # Build production images
+make prod-up       # Start production services (requires .env.prod)
+make prod-down     # Stop production services
+make prod-logs     # View production logs
+make prod-restart  # Restart production services
+make prod-migrate  # Run migrations in production
+make prod-backup   # Backup production database
+make prod-config   # Validate production configuration
 ```
 
 ### Using Docker Compose

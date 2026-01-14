@@ -38,24 +38,24 @@ make prod-down   # Stop services
 - ✅ Auto-loads docker-compose.override.yml
 
 ### Production
-- ❌ No local database (uses managed)
-- ❌ Port 5432 not exposed
-- ⚙️ Resource limits (1 CPU, 1GB RAM)
+- ✅ PostgreSQL in Docker (internal network)
+- ❌ Port 5432 not exposed externally
+- ⚙️ Production logging with rotation
 - ⚙️ NODE_ENV=production
-- ⚙️ Production logging configuration
+- ⚙️ Automatic restart policies
 - ⚙️ Requires explicit -f docker-compose.prod.yml
 
 ## Testing Before Deploy
 
 ```bash
-# 1. Create test managed database on Digital Ocean
-# 2. Set environment variable
-export DATABASE_URL='test-db-connection-string'
+# 1. Create .env.prod file
+cp .env.prod.example .env.prod
+nano .env.prod  # Set POSTGRES_PASSWORD
 
-# 3. Validate configuration
+# 2. Validate configuration
 make prod-config
 
-# 4. Test locally
+# 3. Test locally
 make prod-up
 curl http://localhost:3000/api/health
 

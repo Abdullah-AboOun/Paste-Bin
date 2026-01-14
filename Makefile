@@ -14,10 +14,10 @@ help: ## Show this help message
 	@echo "$(BLUE)Paste-Bin - Reading List Dashboard$(NC)"
 	@echo "$(GREEN)Available commands:$(NC)"
 	@echo ""
-	@echo "$(YELLOW)Development (local database):$(NC)"
+	@echo "$(YELLOW)Development (with local database):$(NC)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | grep -E '(build|up|down|restart|logs)' | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-15s$(NC) %s\n", $$1, $$2}'
 	@echo ""
-	@echo "$(YELLOW)Production (managed database):$(NC)"
+	@echo "$(YELLOW)Production (VPS deployment):$(NC)"
 	@grep -E '^prod-[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(YELLOW)%-15s$(NC) %s\n", $$1, $$2}'
 	@echo ""
 	@echo "$(YELLOW)Other commands:$(NC)"
@@ -141,7 +141,13 @@ prod-restart: ## Restart production services
 
 prod-config: ## Validate production docker-compose configuration
 	@echo "$(BLUE)Validating production configuration...$(NC)"
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod config
+	@if [ ! -f .env.prod ]; then \
+		echo "$(YELLOW)Warning: .env.prod not found, using defaults$(NC)"; \
+		docker-compose -f docker-compose.yml -f docker-compose.prod.yml config --quiet > /dev/null; \
+	else \
+		docker-compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod config --quiet > /dev/null; \
+	fi
+	@echo "$(GREEN)✓ Configuration is valid$(NC)"
 
 prod-migrate: ## Run database migrations in production
 	@echo "$(BLUE)Running production database migrations...$(NC)"
@@ -160,7 +166,6 @@ test-prod: ## Test production configuration locally
 		cp .env.prod.example .env.prod; \
 	fi
 	$(MAKE) prod-config
-	@echo "$(GREEN)✓ Configuration is valid$(NC)"
 
 update: ## Pull latest changes from git and restart services
 	@echo "$(BLUE)Pulling latest changes...$(NC)"

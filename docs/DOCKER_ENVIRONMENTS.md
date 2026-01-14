@@ -4,9 +4,9 @@ This project uses a multi-file Docker Compose setup to support both development 
 
 ## File Structure
 
-- **docker-compose.yml** - Base configuration with the app service (production-ready)
+- **docker-compose.yml** - Base configuration with the app service
 - **docker-compose.override.yml** - Development overrides (adds local PostgreSQL database)
-- **docker-compose.prod.yml** - Production-specific configuration (for managed database)
+- **docker-compose.prod.yml** - Production-specific configuration (PostgreSQL + production settings)
 
 ## Development Environment
 
@@ -23,10 +23,15 @@ make up
 
 **Features:**
 - Local PostgreSQL database running in a container
-- Database exposed on `localhost:5432`
+- Database exposed on `localhost:5432` for debugging
 - Development environment variables
 - Hot-reload and debugging support
-- No resource limits for faster development
+- Relaxed resource limits for faster development
+
+**What runs:**
+- App container (Next.js) on port 3000
+- PostgreSQL container on port 5432
+- Both on the same Docker network
 
 **Commands:**
 ```bash
@@ -43,26 +48,32 @@ make db-migrate     # Run database migrations
 
 ## Production Environment
 
-For production deployment with Digital Ocean Managed PostgreSQL:
+For production deployment on any VPS with both app and database in Docker:
 
 ```bash
-# Ensure DATABASE_URL is set
-export DATABASE_URL='postgresql://user:password@your-managed-db.ondigitalocean.com:25060/db?sslmode=require'
+# Ensure .env.prod exists with secure credentials
+cp .env.prod.example .env.prod
+nano .env.prod  # Set POSTGRES_PASSWORD
 
 # Start production environment
 make prod-up
 
 # This uses:
 # - docker-compose.yml (base)
-# - docker-compose.prod.yml (production overrides)
+# - docker-compose.prod.yml (production overrides + database)
 ```
 
 **Features:**
-- Connects to external managed PostgreSQL (Digital Ocean)
-- No local database container
-- Production logging configuration
-- Resource limits (1 CPU, 1GB RAM)
-- Optimized for deployment
+- PostgreSQL database running in Docker (not exposed externally)
+- Production logging with rotation
+- Automatic restarts
+- Optimized for VPS deployment
+- DATABASE_URL automatically generated from POSTGRES_PASSWORD
+
+**What runs:**
+- App container (Next.js) on port 3000
+- PostgreSQL container (internal network only)
+- Both with production settings and logging
 
 **Commands:**
 ```bash
@@ -77,23 +88,32 @@ make test-prod       # Test production config locally
 
 ## Environment Variables
 
-### Development (.env.example)
+### Development (.env or .env.example)
 ```bash
+# Usually not needed, docker-compose.override.yml sets defaults
+# But you can create .env for custom settings:
 cp .env.example .env
 ```
 
-Edit `.env` with your local settings (default values work out of the box).
+Edit `.env` with your local settings if needed (default values work out of the box).
+
+**Key variables:**
+- `DATABASE_URL` - Automatically set to local PostgreSQL
+- `NODE_ENV=development`
 
 ### Production (.env.prod.example)
 ```bash
 cp .env.prod.example .env.prod
+nano .env.prod  # Edit with secure values
 ```
 
-Edit `.env.prod` with your Digital Ocean managed database connection string.
-
 **Required for production:**
-- `DATABASE_URL` - Connection string to managed PostgreSQL
+- `POSTGRES_PASSWORD` - Secure database password
+- `POSTGRES_USER=postgres` - Database user
+- `POSTGRES_DB=app` - Database name
 - `NODE_ENV=production`
+
+**Note:** `DATABASE_URL` is automatically generated in `docker-compose.prod.yml` from these variables.
 
 ## Database Migrations
 
@@ -101,26 +121,30 @@ Edit `.env.prod` with your Digital Ocean managed database connection string.
 ```bash
 # Run migrations in development
 make db-migrate
+
+# Or manually
+docker compose exec app bun run db:push
 ```
 
 ### Production
-**Best Practice:** Run migrations manually before deployment:
-
 ```bash
-# On your local machine or CI/CD pipeline
-export DATABASE_URL='your-production-database-url'
-bun run db:push
+# Run migrations in production
+make prod-migrate
+
+# Or manually
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec app bun run db:push
 ```
 
-**Important:** Do NOT run migrations automatically in the production container startup. This is a production best practice to avoid migration issues during scaling or restarts.
+**Automatic migrations:** The startup script (`scripts/start.sh`) automatically runs migrations when the container starts in production mode.
 
 ## Testing Production Configuration Locally
 
-Before deploying to Digital Ocean, test your production configuration:
+Before deploying to your VPS, test your production configuration:
 
 ```bash
-# 1. Set up a test managed database on Digital Ocean
-export DATABASE_URL='your-test-managed-database-url'
+# 1. Create .env.prod with test credentials
+cp .env.prod.example .env.prod
+# Edit with test password
 
 # 2. Validate configuration
 make prod-config
@@ -130,44 +154,38 @@ make test-prod
 
 # 4. Start with production config
 make prod-up
+
+# 5. Verify it works
+curl http://localhost:3000/api/health
+
+# 6. Clean up
+make prod-down
 ```
 
-## Digital Ocean Deployment
+## VPS Deployment
 
-### Using App Platform
+For deploying to any VPS (AWS, DigitalOcean, Linode, Vultr, etc.), see:
 
-1. **Create a managed PostgreSQL database:**
-   - Go to Digital Ocean Console → Databases
-   - Create a new PostgreSQL cluster
-   - Note the connection string
+📖 **[VPS Deployment Guide](VPS_DEPLOYMENT.md)**
 
-2. **Configure environment variables in App Platform:**
-   ```
-   DATABASE_URL=postgresql://user:password@your-db.ondigitalocean.com:25060/db?sslmode=require
-   NODE_ENV=production
-   NEXT_TELEMETRY_DISABLED=1
-   ```
-
-3. **Deploy:**
-   - App Platform will automatically build using your Dockerfile
-   - The app will connect to your managed database
-   - No local database container will run
-
-### Using Docker Compose on a Droplet
-
+Quick steps:
 ```bash
-# 1. SSH into your droplet
-ssh root@your-droplet-ip
+# 1. SSH into your VPS
+ssh root@your-server-ip
 
-# 2. Clone your repository
+# 2. Install Docker
+curl -fsSL https://get.docker.com | sh
+
+# 3. Clone repository
 git clone https://github.com/Abdullah-AboOun/Paste-Bin.git
 cd Paste-Bin
 
-# 3. Set environment variables
-export DATABASE_URL='your-managed-database-url'
+# 4. Configure environment
+cp .env.prod.example .env.prod
+nano .env.prod  # Set secure POSTGRES_PASSWORD
 
-# 4. Deploy
-make prod-up
+# 5. Deploy
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
 ```
 
 ## Architecture
@@ -191,12 +209,13 @@ make prod-up
    │  App   │◄─────┤ Local DB │
    │ :3000  │      │  :5432   │
    └────────┘      └──────────┘
+     (dev)          (exposed)
 ```
 
-### Production Flow
+### Production Flow (VPS)
 ```
 ┌─────────────────┐
-│   Deployment    │
+│   VPS Server    │
 └────────┬────────┘
          │
   make prod-up
@@ -205,21 +224,14 @@ make prod-up
 ┌─────────────────────────────┐
 │   docker-compose.yml        │
 │   + docker-compose.prod.yml │
-└───────┬─────────────────────┘
-        │
-        ▼
-   ┌────────┐
-   │  App   │
-   │ :3000  │
-   └───┬────┘
-       │
-       │ DATABASE_URL
-       │
-       ▼
-┌────────────────────┐
-│ Digital Ocean      │
-│ Managed PostgreSQL │
-└────────────────────┘
+└───────┬─────────────────┬───┘
+        │                 │
+        ▼                 ▼
+   ┌────────┐      ┌──────────┐
+   │  App   │◄─────┤ Prod DB  │
+   │ :3000  │      │ (internal)│
+   └────────┘      └──────────┘
+    (public)        (private)
 ```
 
 ## Troubleshooting
@@ -239,14 +251,17 @@ make up
 
 ### Production connection issues
 ```bash
-# Validate DATABASE_URL is set
-echo $DATABASE_URL
+# Check if both containers are running
+docker compose ps
 
-# Test connection to managed database
-psql "$DATABASE_URL" -c "SELECT version();"
+# Check database is healthy
+docker compose exec db pg_isready -U postgres
 
 # Check production logs
 make prod-logs
+
+# Test database connection
+docker compose exec app psql "$DATABASE_URL" -c "SELECT version();"
 ```
 
 ### Migration issues
@@ -257,45 +272,58 @@ make up
 make db-migrate
 
 # Production: Run manually
-export DATABASE_URL='your-production-url'
-bun run db:push
+make prod-migrate
 ```
 
-## Further Considerations
+## Key Differences: Dev vs Prod
 
-### 1. Automatic Migration on Startup
+| Feature | Development | Production |
+|---------|-------------|------------|
+| **Database Port** | Exposed (5432) | Internal only |
+| **Logging** | Simple | JSON with rotation |
+| **Restart Policy** | unless-stopped | unless-stopped |
+| **Resource Limits** | Relaxed (2GB) | Standard (1GB) |
+| **Environment** | NODE_ENV=development | NODE_ENV=production |
+| **Migrations** | Manual | Automatic on startup |
+| **Database Volume** | postgres_data | postgres_data_prod |
 
-**Current approach:** Migrations are run manually before deployment.
+## Best Practices
 
-**Alternatives:**
-- Add an entrypoint script that runs migrations before starting the app
-- Use a sidecar container or init container for migrations
-- Integrate into CI/CD pipeline (recommended)
+### 1. Never Commit Secrets
+- `.env` and `.env.prod` are in `.gitignore`
+- Only commit `.env.example` and `.env.prod.example`
+- Use strong passwords in production
 
-**Recommendation:** Keep migrations separate from app startup in production to avoid race conditions during scaling.
-
-### 2. Environment Variable Management
-
-**Current approach:** 
-- `.env` files locally (gitignored)
-- Digital Ocean environment variables in production
-
-**Alternatives:**
-- Use `docker-compose config` to validate before deployment
-- Use secrets management tools (Vault, AWS Secrets Manager)
-- Use encrypted environment files
-
-### 3. Testing Both Environments
-
-**Recommendation:** Always test production configuration locally before deploying:
-
+### 2. Test Production Locally
 ```bash
-# Create a test managed database on Digital Ocean
-export DATABASE_URL='test-managed-database-url'
+# Always test before deploying
 make test-prod
 make prod-up
 # Verify everything works
 make prod-down
 ```
 
-This catches configuration issues before they reach production.
+### 3. Backup Database
+```bash
+# Production backup
+make prod-backup
+
+# Manual backup
+docker compose exec db pg_dump -U postgres app > backup.sql
+```
+
+### 4. Monitor Logs
+```bash
+# Check logs regularly
+make prod-logs
+
+# Check specific timeframe
+docker compose logs --since 1h app
+```
+
+### 5. Keep System Updated
+```bash
+# On VPS, update regularly
+apt update && apt upgrade -y
+docker system prune -f
+```
