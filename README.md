@@ -82,20 +82,35 @@ The application will be available at:
 
 ## 🚢 Production Deployment
 
-### Deploy to Any VPS
+### Option 1: Quick Deploy with Docker Hub (Recommended)
 
-For production deployment to a VPS (DigitalOcean, AWS, Linode, Vultr, etc.) with Docker, see the comprehensive guide:
+Pull pre-built images from Docker Hub for instant deployment (no building required):
+
+📖 **[Docker Hub Deployment Guide](docs/DOCKER_HUB_DEPLOYMENT.md)**
+
+```bash
+# On your VPS (deployment takes seconds!)
+git clone https://github.com/Abdullah-AboOun/Paste-Bin.git /opt/paste-bin
+cd /opt/paste-bin
+cp .env.prod.example .env.prod
+nano .env.prod  # Set secure POSTGRES_PASSWORD
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod pull
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
+```
+
+### Option 2: Build on VPS
+
+For traditional VPS deployment (builds image on server, takes 15-30 min):
 
 📖 **[VPS Deployment Guide](docs/VPS_DEPLOYMENT.md)**
 
-Quick overview:
 ```bash
 # On your VPS
-git clone https://github.com/Abdullah-AboOun/Paste-Bin.git
-cd Paste-Bin
+git clone https://github.com/Abdullah-AboOun/Paste-Bin.git /opt/paste-bin
+cd /opt/paste-bin
 cp .env.prod.example .env.prod
-# Edit .env.prod with secure credentials
-make prod-up
+nano .env.prod  # Set secure POSTGRES_PASSWORD
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
 ```
 
 For detailed Docker environment configurations:

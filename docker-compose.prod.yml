@@ -3,6 +3,10 @@
 
 services:
   app:
+    # Use pre-built image from Docker Hub instead of building locally
+    # To build locally instead, comment this line and uncomment 'build: .' in docker-compose.yml
+    image: ${DOCKER_IMAGE:-abdullahcg/paste-bin:latest}
+    
     # Production environment variables
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-changeme123}@db:5432/${POSTGRES_DB:-app}
