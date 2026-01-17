@@ -77,10 +77,10 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 ```bash
 # Set custom image in .env.prod
-echo "DOCKER_IMAGE=abdullahcg/paste-bin:v1.2.3" >> .env.prod
+echo "DOCKER_IMAGE=abdullahabooun/paste-bin:v1.2.3" >> .env.prod
 
 # Or use git commit SHA
-echo "DOCKER_IMAGE=abdullahcg/paste-bin:main-abc1234" >> .env.prod
+echo "DOCKER_IMAGE=abdullahabooun/paste-bin:main-abc1234" >> .env.prod
 
 # Deploy
 docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
@@ -90,10 +90,10 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.
 
 ```bash
 # Find available tags
-docker search abdullahcg/paste-bin
+docker search abdullahabooun/paste-bin
 
 # Use previous version
-DOCKER_IMAGE=abdullahcg/paste-bin:main-previoussha docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+DOCKER_IMAGE=abdullahabooun/paste-bin:main-previoussha docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 ## Custom Docker Hub Repository
@@ -106,7 +106,7 @@ If you forked this repo and want to use your own Docker Hub account:
    nano docker-compose.prod.yml
    
    # Change:
-   image: ${DOCKER_IMAGE:-abdullahcg/paste-bin:latest}
+   image: ${DOCKER_IMAGE:-abdullahabooun/paste-bin:latest}
    # To:
    image: ${DOCKER_IMAGE:-yourusername/paste-bin:latest}
    ```
@@ -135,7 +135,7 @@ If you forked this repo and want to use your own Docker Hub account:
 ### Image Not Found
 ```bash
 # Verify image exists on Docker Hub
-docker search abdullahcg/paste-bin
+docker search abdullahabooun/paste-bin
 
 # Or check GitHub Actions for build errors
 # Go to: GitHub repo → Actions tab
