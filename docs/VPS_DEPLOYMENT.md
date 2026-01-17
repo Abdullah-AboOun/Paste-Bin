@@ -30,10 +30,12 @@ Create a server with your preferred VPS provider:
 
 **Minimum Requirements**:
 - **OS**: Ubuntu 24.04 LTS or 22.04 LTS (recommended)
-- **RAM**: 2GB (minimum 1GB)
+- **RAM**: 2GB (minimum 1GB, first build takes 15-30 min on 1GB)
 - **CPU**: 1 vCPU
 - **Storage**: 25GB
 - **Authentication**: SSH key (recommended) or password
+
+**⚠️ Note**: First deployment will build the Docker image on the VPS, which takes 15-30 minutes on a 1GB RAM server. See "Fast Deployment Options" below to skip building on the VPS.
 
 **Popular Providers**:
 - [DigitalOcean](https://www.digitalocean.com/) - Droplets from $6-12/month
@@ -96,23 +98,65 @@ POSTGRES_PASSWORD=your_strong_password_here
 ### 5. Deploy Application
 
 ```bash
-# Start services (will automatically use .env.prod)
+# Start services (will build image first time, takes 15-30 min on 1GB RAM)
 docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
 
-# Or use make command
-make prod-up
-
-# Check status
-docker compose ps
-
-# View logs
+# Check build progress
 docker compose logs -f
+
+# Once complete, check status
+docker compose ps
 
 # Test health endpoint
 curl http://localhost:3000/api/health
 ```
 
 Visit `http://your_server_ip:3000` - your app is live!
+
+### 5a. Fast Deployment Options (Skip Building on VPS)
+
+**Option A: Use Pre-built Image from Docker Hub**
+
+If the image is available on Docker Hub, you can skip the slow build:
+
+```bash
+# Pull pre-built image (instant)
+docker pull yourusername/paste-bin:latest
+
+# Deploy using the pre-built image
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
+```
+
+**Option B: Build Locally and Push**
+
+Build on your faster local machine, then pull on VPS:
+
+```bash
+# On your local machine:
+docker build -t yourusername/paste-bin:latest .
+docker login
+docker push yourusername/paste-bin:latest
+
+# On VPS:
+docker pull yourusername/paste-bin:latest
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
+```
+
+**Option C: Add Swap Space for Faster Builds**
+
+If building on VPS with 1GB RAM, add swap to improve build speed:
+
+```bash
+# Add 2GB swap
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# Verify
+free -h
+```
 
 ### 6. Setup Domain + HTTPS (Recommended)
 

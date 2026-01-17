@@ -10,7 +10,18 @@ COPY package.json bun.lock* ./
 # Install dependencies (including devDependencies for building)
 RUN bun install --frozen-lockfile
 
-# Stage 2: Builder - Build the Next.js application
+# Stage 2: Production Dependencies - Install only production deps + migration tools
+FROM oven/bun:1.3.5-alpine AS prod-deps
+
+WORKDIR /app
+
+COPY package.json bun.lock* ./
+
+# Install only production dependencies + drizzle tools for migrations
+RUN bun install --frozen-lockfile --production && \
+    bun add drizzle-kit@0.30.5 drizzle-orm@0.41.0 postgres@3.4.4
+
+# Stage 3: Builder - Build the Next.js application
 FROM oven/bun:1.3.5-alpine AS builder
 
 WORKDIR /app
@@ -24,8 +35,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV SKIP_ENV_VALIDATION=1
 
-# Build the Next.js application
-RUN bun run build
+# Build the Next.js application with cache mount for faster rebuilds
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun run build
 
 # Stage 3: Runner - Production runtime
 FROM oven/bun:1.3.5-alpine AS runner
@@ -46,9 +58,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Copy package.json and node_modules for migrations
+# Copy package.json and ONLY production node_modules for migrations (smaller image)
 COPY --from=builder /app/package.json ./package.json
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=prod-deps /app/node_modules ./node_modules
 
 # Copy database schema, config, and env for migrations
 COPY --from=builder /app/src/server/db ./src/server/db

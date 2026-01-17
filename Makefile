@@ -25,18 +25,18 @@ help: ## Show this help message
 
 build: ## Build Docker images (development)
 	@echo "$(BLUE)Building Docker images...$(NC)"
-	docker-compose build --no-cache
+	docker compose build --no-cache
 
 up: ## Start all services in detached mode (development with local DB)
 	@echo "$(GREEN)Starting development services...$(NC)"
-	docker-compose up -d
+	docker compose up -d
 	@echo "$(GREEN)✓ Services started!$(NC)"
 	@echo "$(BLUE)Access the app at: http://localhost:3000$(NC)"
 	@echo "$(BLUE)Database available at: localhost:5432$(NC)"
 
 down: ## Stop all services (development)
 	@echo "$(YELLOW)Stopping services...$(NC)"
-	docker-compose down
+	docker compose down
 	@echo "$(GREEN)✓ Services stopped$(NC)"
 
 restart: ## Restart all services
@@ -45,20 +45,20 @@ restart: ## Restart all services
 	$(MAKE) up
 
 logs: ## View logs from all services
-	docker-compose logs -f
+	docker compose logs -f
 
 logs-app: ## View logs from app service only
-	docker-compose logs -f app
+	docker compose logs -f app
 
 logs-db: ## View logs from database service only
-	docker-compose logs -f db
+	docker compose logs -f db
 
 clean: ## Stop services and remove volumes (clean database)
 	@echo "$(RED)Warning: This will remove all data!$(NC)"
 	@read -p "Are you sure? [y/N] " -n 1 -r; \
 	echo; \
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		docker-compose down -v; \
+		docker compose down -v; \
 		echo "$(GREEN)✓ Cleaned up$(NC)"; \
 	fi
 
@@ -67,21 +67,21 @@ clean-all: ## Remove everything including images
 	@read -p "Are you sure? [y/N] " -n 1 -r; \
 	echo; \
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		docker-compose down -v --rmi all; \
+		docker compose down -v --rmi all; \
 		echo "$(GREEN)✓ Everything cleaned$(NC)"; \
 	fi
 
 db-shell: ## Open PostgreSQL shell
 	@echo "$(BLUE)Opening database shell...$(NC)"
-	docker-compose exec db psql -U postgres -d app
+	docker compose exec db psql -U postgres -d app
 
 db-migrate: ## Run database migrations
 	@echo "$(BLUE)Running database migrations...$(NC)"
-	docker-compose exec app bun run db:push
+	docker compose exec app bun run db:push
 
 status: ## Show status of all services
 	@echo "$(BLUE)Service Status:$(NC)"
-	@docker-compose ps
+	@docker compose ps
 
 health: ## Check health of services
 	@echo "$(BLUE)Checking service health...$(NC)"
@@ -97,7 +97,7 @@ dev: ## Run development server locally (without Docker)
 
 test: ## Test if services are running correctly
 	@echo "$(BLUE)Testing services...$(NC)"
-	@if docker-compose ps | grep -q "Up"; then \
+	@if docker compose ps | grep -q "Up"; then \
 		echo "$(GREEN)✓ Services are running$(NC)"; \
 		curl -s http://localhost:3000/api/health > /dev/null && echo "$(GREEN)✓ Health check passed$(NC)" || echo "$(RED)✗ Health check failed$(NC)"; \
 	else \
@@ -113,7 +113,7 @@ rebuild: ## Rebuild and restart services
 # Production targets
 prod-build: ## Build Docker images for production
 	@echo "$(BLUE)Building production images...$(NC)"
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
+	docker compose -f docker compose.yml -f docker compose.prod.yml build --no-cache
 
 prod-up: ## Start production services with database
 	@echo "$(GREEN)Starting production services...$(NC)"
@@ -122,41 +122,41 @@ prod-up: ## Start production services with database
 		echo "$(YELLOW)Copy .env.prod.example to .env.prod and update values$(NC)"; \
 		exit 1; \
 	fi
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
+	docker compose -f docker compose.yml -f docker compose.prod.yml --env-file .env.prod up -d
 	@echo "$(GREEN)✓ Production services started!$(NC)"
 	@echo "$(BLUE)Access the app at: http://localhost:3000$(NC)"
 
 prod-down: ## Stop production services
 	@echo "$(YELLOW)Stopping production services...$(NC)"
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+	docker compose -f docker compose.yml -f docker compose.prod.yml down
 	@echo "$(GREEN)✓ Production services stopped$(NC)"
 
 prod-logs: ## View logs from production services
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
+	docker compose -f docker compose.yml -f docker compose.prod.yml logs -f
 
 prod-restart: ## Restart production services
 	@echo "$(YELLOW)Restarting production services...$(NC)"
 	$(MAKE) prod-down
 	$(MAKE) prod-up
 
-prod-config: ## Validate production docker-compose configuration
+prod-config: ## Validate production docker compose configuration
 	@echo "$(BLUE)Validating production configuration...$(NC)"
 	@if [ ! -f .env.prod ]; then \
 		echo "$(YELLOW)Warning: .env.prod not found, using defaults$(NC)"; \
-		docker-compose -f docker-compose.yml -f docker-compose.prod.yml config --quiet > /dev/null; \
+		docker compose -f docker compose.yml -f docker compose.prod.yml config --quiet > /dev/null; \
 	else \
-		docker-compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod config --quiet > /dev/null; \
+		docker compose -f docker compose.yml -f docker compose.prod.yml --env-file .env.prod config --quiet > /dev/null; \
 	fi
 	@echo "$(GREEN)✓ Configuration is valid$(NC)"
 
 prod-migrate: ## Run database migrations in production
 	@echo "$(BLUE)Running production database migrations...$(NC)"
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec app bun run db:push
+	docker compose -f docker compose.yml -f docker compose.prod.yml exec app bun run db:push
 
 prod-backup: ## Backup production database
 	@echo "$(BLUE)Creating database backup...$(NC)"
 	@mkdir -p backups
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml exec -T db pg_dump -U postgres app > backups/backup_$$(date +%Y%m%d_%H%M%S).sql
+	docker compose -f docker compose.yml -f docker compose.prod.yml exec -T db pg_dump -U postgres app > backups/backup_$$(date +%Y%m%d_%H%M%S).sql
 	@echo "$(GREEN)✓ Backup created in backups/$(NC)"
 
 test-prod: ## Test production configuration locally
