@@ -7,10 +7,6 @@ A modern, full-stack web application for managing your reading list. Save articl
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-## 🌐 Live Demo
-
-**[View Live Demo →](http://157.245.239.229:3000/)**
-
 ## ✨ Features
 
 - **📝 Article Management**: Save articles with titles and URLs
